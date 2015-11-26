@@ -45,6 +45,9 @@ export default function ({types: t, template}: PluginParams): Plugin {
   const PRECONDITION_NAME = 'pre';
   const POSTCONDITION_NAME = 'post';
   const INVARIANT_NAME = 'invariant';
+  const RETURN_NAME = 'it';
+
+  const returnId: Identifier = t.identifier(RETURN_NAME);
 
   const preconditionAsserter: (ids: {[key: string]: Node}) => Node = template(`
     if (!condition) {
@@ -52,22 +55,12 @@ export default function ({types: t, template}: PluginParams): Plugin {
     }
   `);
 
-  const functionVisitor: Visitors = {
-    Function (path: NodePath): void {
-      // This will be handled by the outer visitor, so skip it.
-      path.skip();
-    },
-
-    LabeledStatement (path: NodePath): void {
-      const label: NodePath = path.get('label');
-
-      if (label.node.name === PRECONDITION_NAME) {
-        assemblePrecondition(path);
-      }
-
+  const postconditionAsserter: (ids: {[key: string]: Node}) => Node = template(`
+    function id (it) {
+      conditions;
+      return it;
     }
-  };
-
+  `);
 
   function assemblePrecondition (path: NodePath): void {
     const body: NodePath = path.get('body');
@@ -84,6 +77,12 @@ export default function ({types: t, template}: PluginParams): Plugin {
         throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
       },
       UpdateExpression (item: NodePath): void {
+        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
+      },
+      YieldExpression (item: NodePath): void {
+        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
+      },
+      ReturnStatement (item: NodePath): void {
         throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
       },
       ExpressionStatement (statement: NodePath): void {
@@ -110,8 +109,60 @@ export default function ({types: t, template}: PluginParams): Plugin {
     else {
       path.replaceWith(path.get('body'));
     }
-
   }
+
+  function assemblePostcondition (path: NodePath): Identifier {
+    const body: NodePath = path.get('body');
+    const fn: NodePath = path.getFunctionParent();
+    const name: string = fn.node.id ? `"${fn.node.id.name}" `: ' ';
+    body.traverse({
+      VariableDeclaration (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      Function (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      AssignmentExpression (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      UpdateExpression (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      YieldExpression (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      ReturnStatement (item: NodePath): void {
+        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+      },
+      ExpressionStatement (statement: NodePath): void {
+        let condition: NodePath = statement.get('expression');
+        let message;
+        if (condition.isSequenceExpression()) {
+          const expressions = condition.get('expressions');
+          condition = expressions[0];
+          message = expressions[1];
+        }
+        else {
+          message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
+        }
+        statement.replaceWith(preconditionAsserter({
+          condition,
+          message
+        }));
+      }
+    });
+
+    const id = path.scope.generateUidIdentifier(`${fn.node.id ? fn.node.id.name : 'check'}Postcondition`);
+
+    path.replaceWith(postconditionAsserter({
+      id,
+      it: returnId,
+      conditions: body.node.body
+    }));
+
+    return id;
+  }
+
 
   function expression (input: string): Function {
     const fn: Function = template(input);
@@ -123,12 +174,45 @@ export default function ({types: t, template}: PluginParams): Plugin {
 
   return {
     visitor: {
-      Function (path: NodePath): void {
-        if (path.isArrowFunctionExpression() && !path.get('body').isBlockStatement()) {
+      Function (fn: NodePath): void {
+        if (fn.isArrowFunctionExpression() && !fn.get('body').isBlockStatement()) {
           // Naked arrow functions cannot contain contracts.
           return;
         }
-        path.traverse(functionVisitor);
+        fn.traverse({
+          Function (path: NodePath): void {
+            // This will be handled by the outer visitor, so skip it.
+            path.skip();
+          },
+
+          LabeledStatement (path: NodePath): void {
+            const label: NodePath = path.get('label');
+
+            if (label.node.name === PRECONDITION_NAME) {
+              assemblePrecondition(path);
+            }
+            else if (label.node.name === POSTCONDITION_NAME) {
+              const id = assemblePostcondition(path);
+              let returnCount = 0;
+              fn.traverse({
+                Function (path: NodePath): void {
+                  // This will be handled by the outer visitor, so skip it.
+                  path.skip();
+                },
+                ReturnStatement (statement: NodePath): void {
+                  returnCount++;
+                  statement.get('argument').replaceWith(t.callExpression(id, [statement.node.argument]));
+                }
+              });
+              const children: NodePath = fn.get('body').get('body');
+              const last: NodePath = children[children.length - 1];
+              if (!last.isReturnStatement()) {
+                last.insertAfter(t.expressionStatement(t.callExpression(id, [])));
+              }
+            }
+
+          }
+        });
       }
     }
   };

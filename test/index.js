@@ -24,6 +24,21 @@ describe('Typecheck', function () {
   failStatic('bad-precondition-with-updateexpr', ['foo', 'bar']);
   failStatic('bad-precondition-with-assignment', ['foo', 'bar']);
 
+  ok('postcondition', 'foo');
+  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition', false);
+  ok('postcondition-with-if', 'foo');
+  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition-with-if', false);
+  ok('postcondition-with-if-inside', 'foo');
+  failWith(`Function "demo" postcondition failed: it.length > 2`, 'postcondition-with-if-inside', 'no');
+  ok('postcondition-no-return', 'foo');
+  failWith(`Function "demo" postcondition failed: typeof input === 'string'`, 'postcondition-no-return', false);
+  ok('postcondition-conditional', true);
+  failWith(`Function "demo" postcondition failed: it === true`, 'postcondition-conditional', false);
+
+  ok('precondition-and-postcondition', 'foo');
+  failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition', true);
+  failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition', 'no');
+
   it(`should load itself`, function () {
     this.timeout(10000);
     load('/../../src/index');
