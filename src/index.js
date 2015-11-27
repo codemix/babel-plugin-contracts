@@ -17,6 +17,7 @@ type Visitor = (path: NodePath) => void;
 
 type Node = {
   type: string;
+  node?: void;
 };
 
 type Literal = {
@@ -49,13 +50,13 @@ export default function ({types: t, template}: PluginParams): Plugin {
 
   const returnId: Identifier = t.identifier(RETURN_NAME);
 
-  const preconditionAsserter: (ids: {[key: string]: Node}) => Node = template(`
+  const guard: (ids: {[key: string]: Node}) => Node = template(`
     if (!condition) {
       throw new Error(message);
     }
   `);
 
-  const postconditionAsserter: (ids: {[key: string]: Node}) => Node = template(`
+  const guardFn: (ids: {[key: string]: Node}) => Node = template(`
     function id (it) {
       conditions;
       return it;
@@ -66,6 +67,24 @@ export default function ({types: t, template}: PluginParams): Plugin {
     const body: NodePath = path.get('body');
     const fn: NodePath = path.getFunctionParent();
     const name: string = fn.node.id ? `"${fn.node.id.name}" `: ' ';
+    if (body.isExpressionStatement()) {
+      let condition: NodePath = body.get('expression');
+      let message: ?Node;
+      if (condition.isSequenceExpression()) {
+        const expressions = condition.get('expressions');
+        condition = expressions[0];
+        message = expressions[1].node;
+      }
+      else {
+        message = t.stringLiteral(`Function ${name}precondition failed: ${generate(condition.node).code}`);
+      }
+      path.replaceWith(guard({
+        condition,
+        message
+      }));
+      return;
+    }
+
     body.traverse({
       VariableDeclaration (item: NodePath): void {
         throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
@@ -87,16 +106,16 @@ export default function ({types: t, template}: PluginParams): Plugin {
       },
       ExpressionStatement (statement: NodePath): void {
         let condition: NodePath = statement.get('expression');
-        let message;
+        let message: ?Node;
         if (condition.isSequenceExpression()) {
           const expressions = condition.get('expressions');
           condition = expressions[0];
-          message = expressions[1];
+          message = expressions[1].node;
         }
         else {
           message = t.stringLiteral(`Function ${name}precondition failed: ${generate(condition.node).code}`);
         }
-        statement.replaceWith(preconditionAsserter({
+        statement.replaceWith(guard({
           condition,
           message
         }));
@@ -115,49 +134,70 @@ export default function ({types: t, template}: PluginParams): Plugin {
     const body: NodePath = path.get('body');
     const fn: NodePath = path.getFunctionParent();
     const name: string = fn.node.id ? `"${fn.node.id.name}" `: ' ';
-    body.traverse({
-      VariableDeclaration (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      Function (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      AssignmentExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      UpdateExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      YieldExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      ReturnStatement (item: NodePath): void {
-        throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-      },
-      ExpressionStatement (statement: NodePath): void {
-        let condition: NodePath = statement.get('expression');
-        let message;
-        if (condition.isSequenceExpression()) {
-          const expressions = condition.get('expressions');
-          condition = expressions[0];
-          message = expressions[1];
-        }
-        else {
-          message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
-        }
-        statement.replaceWith(preconditionAsserter({
-          condition,
-          message
-        }));
+    const conditions: Node[] = [];
+
+    if (body.isExpressionStatement()) {
+      let condition: NodePath = body.get('expression');
+      let message: ?Node;
+      if (condition.isSequenceExpression()) {
+        const expressions = condition.get('expressions');
+        condition = expressions[0];
+        message = expressions[1].node;
       }
-    });
+      else {
+        message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
+      }
+      conditions.push(guard({
+        condition,
+        message
+      }));
+    }
+    else {
+      body.traverse({
+        VariableDeclaration (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        Function (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        AssignmentExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        UpdateExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        YieldExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        ReturnStatement (item: NodePath): void {
+          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        ExpressionStatement (statement: NodePath): void {
+          let condition: NodePath = statement.get('expression');
+          let message: ?Node;
+          if (condition.isSequenceExpression()) {
+            const expressions = condition.get('expressions');
+            condition = expressions[0];
+            message = expressions[1].node;
+          }
+          else {
+            message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
+          }
+          statement.replaceWith(guard({
+            condition,
+            message
+          }));
+        }
+      });
+      conditions.push(...body.node.body);
+    }
 
     const id = path.scope.generateUidIdentifier(`${fn.node.id ? fn.node.id.name : 'check'}Postcondition`);
 
-    path.replaceWith(postconditionAsserter({
+    path.replaceWith(guardFn({
       id,
-      it: returnId,
-      conditions: body.node.body
+      conditions,
+      it: returnId
     }));
 
     return id;

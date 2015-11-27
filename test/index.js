@@ -24,6 +24,11 @@ describe('Typecheck', function () {
   failStatic('bad-precondition-with-updateexpr', ['foo', 'bar']);
   failStatic('bad-precondition-with-assignment', ['foo', 'bar']);
 
+  ok('precondition-no-block', 'foo');
+  failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-no-block', false);
+  ok('precondition-no-block-with-message', 'foo');
+  failWith(`Expected string`, 'precondition-no-block-with-message', false);
+
   ok('postcondition', 'foo');
   failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition', false);
   ok('postcondition-with-if', 'foo');
@@ -35,9 +40,20 @@ describe('Typecheck', function () {
   ok('postcondition-conditional', true);
   failWith(`Function "demo" postcondition failed: it === true`, 'postcondition-conditional', false);
 
+  ok('postcondition-no-block', 'foo');
+  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition-no-block', false);
+
+  ok('postcondition-no-block-with-message', 'foo');
+  failWith(`Expected string`, 'postcondition-no-block-with-message', false);
+
   ok('precondition-and-postcondition', 'foo');
   failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition', true);
   failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition', 'no');
+
+  ok('precondition-and-postcondition-no-block', 'foo');
+  failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition-no-block', true);
+  failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition-no-block', 'no');
+
 
   it(`should load itself`, function () {
     this.timeout(10000);
