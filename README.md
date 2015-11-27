@@ -6,7 +6,7 @@ This is a [Babel](https://babeljs.io/) plugin for design by contract for JavaScr
 
 # What?
 
-Dunno yet.
+[TODO!]
 
 # Installation
 
