@@ -54,6 +54,8 @@ describe('Typecheck', function () {
   failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition-no-block', true);
   failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition-no-block', 'no');
 
+  ok('invariant', 'hello world');
+  ok('loop-invariant', 'hello world');
 
   it(`should load itself`, function () {
     this.timeout(10000);

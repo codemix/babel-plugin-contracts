@@ -203,6 +203,79 @@ export default function ({types: t, template}: PluginParams): Plugin {
     return id;
   }
 
+  function assembleInvariant (path: NodePath): Identifier {
+    const body: NodePath = path.get('body');
+    const fn: NodePath = path.getFunctionParent();
+    const name: string = fn.node.id ? `"${fn.node.id.name}" `: ' ';
+    const conditions: Node[] = [];
+
+    if (body.isExpressionStatement()) {
+      let condition: NodePath = body.get('expression');
+      let message: ?Node;
+      if (condition.isSequenceExpression()) {
+        const expressions = condition.get('expressions');
+        condition = expressions[0];
+        message = expressions[1].node;
+      }
+      else {
+        message = t.stringLiteral(`Function ${name}invariant failed: ${generate(condition.node).code}`);
+      }
+      conditions.push(guard({
+        condition,
+        message
+      }));
+    }
+    else {
+      body.traverse({
+        VariableDeclaration (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        Function (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        AssignmentExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        UpdateExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        YieldExpression (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        ReturnStatement (item: NodePath): void {
+          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
+        },
+        ExpressionStatement (statement: NodePath): void {
+          let condition: NodePath = statement.get('expression');
+          let message: ?Node;
+          if (condition.isSequenceExpression()) {
+            const expressions = condition.get('expressions');
+            condition = expressions[0];
+            message = expressions[1].node;
+          }
+          else {
+            message = t.stringLiteral(`Function ${name}invariant failed: ${generate(condition.node).code}`);
+          }
+          statement.replaceWith(guard({
+            condition,
+            message
+          }));
+        }
+      });
+      conditions.push(...body.node.body);
+    }
+
+    const id = path.scope.generateUidIdentifier(`${fn.node.id ? fn.node.id.name : 'check'}Invariant`);
+
+    path.replaceWith(guardFn({
+      id,
+      conditions,
+      it: returnId
+    }));
+
+    return id;
+  }
+
 
   function expression (input: string): Function {
     const fn: Function = template(input);
@@ -227,30 +300,37 @@ export default function ({types: t, template}: PluginParams): Plugin {
 
           LabeledStatement (path: NodePath): void {
             const label: NodePath = path.get('label');
-
+            let id: ?Identifer;
+            let children: ?NodePath;
+            let parent: NodePath = fn;
             if (label.node.name === PRECONDITION_NAME) {
               assemblePrecondition(path);
+              return;
             }
             else if (label.node.name === POSTCONDITION_NAME) {
-              const id = assemblePostcondition(path);
-              let returnCount = 0;
-              fn.traverse({
-                Function (path: NodePath): void {
-                  // This will be handled by the outer visitor, so skip it.
-                  path.skip();
-                },
-                ReturnStatement (statement: NodePath): void {
-                  returnCount++;
-                  statement.get('argument').replaceWith(t.callExpression(id, [statement.node.argument]));
-                }
-              });
-              const children: NodePath = fn.get('body').get('body');
-              const last: NodePath = children[children.length - 1];
-              if (!last.isReturnStatement()) {
-                last.insertAfter(t.expressionStatement(t.callExpression(id, [])));
-              }
+              id = assemblePostcondition(path);
+              children = fn.get('body').get('body');
             }
-
+            else if (label.node.name === INVARIANT_NAME) {
+              id = assembleInvariant(path);
+              parent = path.findParent(t.isBlockStatement);
+              children = parent.get('body');
+              const first: NodePath = children[0];
+              first.insertBefore(t.expressionStatement(t.callExpression(id, [])))
+            }
+            parent.traverse({
+              Function (path: NodePath): void {
+                // This will be handled by the outer visitor, so skip it.
+                path.skip();
+              },
+              ReturnStatement (statement: NodePath): void {
+                statement.get('argument').replaceWith(t.callExpression(id, [statement.node.argument]));
+              }
+            });
+            const last: NodePath = children[children.length - 1];
+            if (!last.isReturnStatement()) {
+              last.insertAfter(t.expressionStatement(t.callExpression(id, [])));
+            }
           }
         });
       }
