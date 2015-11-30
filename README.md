@@ -51,7 +51,7 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
   ```js
   function warn (message) {
     pre: typeof message === 'string';
-    alert('Warning!\n' + message);
+    return 'Warning!\n' + message;
   }
   ```
 
@@ -89,7 +89,6 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
   ```js
   function withdraw (fromAccount, amount) {
     pre: {
-      fromAccount instanceof BankAccount;
       typeof amount === 'number';
       amount > 0;
       fromAccount.balance - amount > -fromAccount.overdraftLimit;
@@ -110,7 +109,6 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
   ```js
   function withdraw (fromAccount, amount) {
     pre: {
-      fromAccount instanceof BankAccount;
       typeof amount === 'number';
       amount > 0;
     }
@@ -128,7 +126,6 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
   ```js
   function withdraw (fromAccount, amount) {
     pre: {
-      fromAccount instanceof BankAccount, "First argument must be an instance of BankAccount";
       typeof amount === 'number', "Second argument must be a number";
       amount > 0, "Cannot withdraw a zero or negative amount";
       fromAccount.balance - amount > -fromAccount.overdraftLimit, "Must not exceed overdraft limit";

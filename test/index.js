@@ -12,6 +12,17 @@ else {
 }
 
 describe('Typecheck', function () {
+  ok('example-1', 'hello');
+  failWith(`Function "warn" precondition failed: typeof message === 'string'`, 'example-1', 123);
+  ok('example-2', 1, 2);
+  ok('example-2', 1);
+  ok('example-2', 0, 2);
+  failWith(`Function "items" postcondition failed: it.length > 0`, 'example-2');
+  ok('example-3', {balance: 100, overdraftLimit: 100}, 10);
+  failWith(`Function "withdraw" precondition failed: fromAccount.balance - amount > -fromAccount.overdraftLimit`, 'example-3', {balance: 100, overdraftLimit: 100}, 1000);
+  ok('example-4', {balance: 100, overdraftLimit: 100}, 10);
+  failWith("Must not exceed overdraft limit", 'example-4', {balance: 100, overdraftLimit: 100}, 1000);
+
   ok('precondition', 'foo');
   failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition', false);
   ok('precondition-with-message', 'foo');
