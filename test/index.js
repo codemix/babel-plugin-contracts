@@ -12,8 +12,22 @@ else {
 }
 
 describe('Typecheck', function () {
+  ok('assert', 'hello');
+  failWith(`Function "demo" assertion failed: input.length > 0`, 'assert', '');
+  ok('assert-block', 'hello');
+  failWith(`Function "demo" assertion failed: input.length > 0`, 'assert-block', '');
+  ok('assert-multiple', 'yo');
+  failWith(`Function "demo" assertion failed: input.length > 0`, 'assert-multiple', '');
+  failWith(`Function "demo" assertion failed: input.length < 5`, 'assert-multiple', 'hello');
+  ok('assert-multiple-block', 'yo');
+  failWith(`Function "demo" assertion failed: input.length > 0`, 'assert-multiple-block', '');
+  failWith(`Function "demo" assertion failed: input.length < 5`, 'assert-multiple-block', 'hello');
   ok('example-1', 'hello');
   failWith(`Function "warn" precondition failed: typeof message === 'string'`, 'example-1', 123);
+  ok('assert-with-message', 'hello');
+  failWith(`input cannot be empty`, 'assert-with-message', '');
+  ok('assert-no-function', 'hello');
+  failWith(`Assertion failed: false`, 'bad-assert-no-function', 'hello');
   ok('example-2', 1, 2);
   ok('example-2', 1);
   ok('example-2', 0, 2);
@@ -88,7 +102,7 @@ function loadInternal (basename) {
       "stage-0",
     ],
     plugins: [
-      contracts,
+      [contracts, {strip: true}],
       'transform-flow-strip-types',
       'syntax-class-properties'
     ]

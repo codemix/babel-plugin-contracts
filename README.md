@@ -119,7 +119,33 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
     fromAccount.balance -= amount;
   }
   ```
-4. **Error Messages**
+
+4. **Assertions**
+
+  Assertions verify that something is truthy and throw an error if the assertion fails. They run where they are specified:
+
+  ```js
+  function add (a, b) {
+    const result = a + b;
+    assert: typeof result === 'number';
+    return result;
+  }
+  ```
+
+  or, with multiple:
+
+  ```js
+  function add (a, b) {
+    const result = a + b;
+    assert: {
+      typeof result === 'number';
+      !isNaN(result);
+    }
+    return result;
+  }
+  ```
+
+5. **Error Messages**
 
   Often it's nice to provide an error message for the contract that failed, for example:
 
