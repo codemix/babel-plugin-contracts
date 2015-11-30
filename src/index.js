@@ -86,22 +86,7 @@ export default function ({types: t, template}: PluginParams): Plugin {
     }
 
     body.traverse({
-      VariableDeclaration (item: NodePath): void {
-        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
-      },
-      Function (item: NodePath): void {
-        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
-      },
-      AssignmentExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
-      },
-      UpdateExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
-      },
-      YieldExpression (item: NodePath): void {
-        throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
-      },
-      ReturnStatement (item: NodePath): void {
+      "VariableDeclaration|Function|AssignmentExpression|UpdateExpression|YieldExpression|ReturnStatement" (item: NodePath): void {
         throw path.buildCodeFrameError(`Preconditions cannot have side effects.`);
       },
       ExpressionStatement (statement: NodePath): void {
@@ -154,22 +139,7 @@ export default function ({types: t, template}: PluginParams): Plugin {
     }
     else {
       body.traverse({
-        VariableDeclaration (item: NodePath): void {
-          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-        },
-        Function (item: NodePath): void {
-          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-        },
-        AssignmentExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-        },
-        UpdateExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-        },
-        YieldExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
-        },
-        ReturnStatement (item: NodePath): void {
+        "VariableDeclaration|Function|AssignmentExpression|UpdateExpression|YieldExpression|ReturnStatement" (item: NodePath): void {
           throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
         },
         ExpressionStatement (statement: NodePath): void {
@@ -227,22 +197,7 @@ export default function ({types: t, template}: PluginParams): Plugin {
     }
     else {
       body.traverse({
-        VariableDeclaration (item: NodePath): void {
-          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
-        },
-        Function (item: NodePath): void {
-          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
-        },
-        AssignmentExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
-        },
-        UpdateExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
-        },
-        YieldExpression (item: NodePath): void {
-          throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
-        },
-        ReturnStatement (item: NodePath): void {
+        "VariableDeclaration|Function|AssignmentExpression|UpdateExpression|YieldExpression|ReturnStatement" (item: NodePath): void {
           throw path.buildCodeFrameError(`Invariants cannot have side effects.`);
         },
         ExpressionStatement (statement: NodePath): void {
@@ -300,8 +255,8 @@ export default function ({types: t, template}: PluginParams): Plugin {
 
           LabeledStatement (path: NodePath): void {
             const label: NodePath = path.get('label');
-            let id: ?Identifer;
-            let children: ?NodePath;
+            let id: ?Identifier;
+            let children: ?NodePath[];
             let parent: NodePath = fn;
             if (label.node.name === PRECONDITION_NAME) {
               assemblePrecondition(path);
