@@ -38,9 +38,17 @@ npm install --save-dev babel-plugin-contracts
 Then, in your babel configuration (usually in your `.babelrc` file), add `"contracts"` to your list of plugins:
 ```json
 {
-  "plugins": ["contracts"]
+  "plugins": ["contracts", {
+    "env": {
+      "production": {
+        "strip": true
+      }
+    }
+  }]
 }
 ```
+
+The above example configuration will remove all contracts when `NODE_ENV=production`, which is often preferable for performance reasons.
 
 ## Examples
 
@@ -165,7 +173,6 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
   ```
 
   Now if a contract fails, the error object will have a descriptive message.
-
 
 # License
 

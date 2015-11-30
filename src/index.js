@@ -41,14 +41,13 @@ type NodePath = {
 /**
  * # Design By Contract Transformer
  */
-export default function ({types: t, template, options}: PluginParams, opts): Plugin {
+export default function ({types: t, template, options}: PluginParams): Plugin {
 
   const PRECONDITION_NAME = 'pre';
   const POSTCONDITION_NAME = 'post';
   const INVARIANT_NAME = 'invariant';
   const ASSERT_NAME = 'assert';
   const RETURN_NAME = 'it';
-  console.log(options);
   const returnId: Identifier = t.identifier(RETURN_NAME);
 
   const guard: (ids: {[key: string]: Node}) => Node = template(`
@@ -301,7 +300,7 @@ export default function ({types: t, template, options}: PluginParams, opts): Plu
 
   return {
     visitor: {
-      Function (fn: NodePath): void {
+      Function (fn: NodePath, {opts}): void {
         if (fn.isArrowFunctionExpression() && !fn.get('body').isBlockStatement()) {
           // Naked arrow functions cannot contain contracts.
           return;
@@ -314,6 +313,14 @@ export default function ({types: t, template, options}: PluginParams, opts): Plu
 
           LabeledStatement (path: NodePath): void {
             const label: NodePath = path.get('label');
+            if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
+              if (label.node.name === PRECONDITION_NAME || label.node.name === POSTCONDITION_NAME || label.node.name === INVARIANT_NAME || label.node.name === ASSERT_NAME) {
+                path.remove();
+              }
+              return;
+            }
+
+
             let id: ?Identifier;
             let children: ?NodePath[];
             let parent: NodePath = fn;
@@ -353,11 +360,16 @@ export default function ({types: t, template, options}: PluginParams, opts): Plu
         });
       },
 
-      LabeledStatement (path: NodePath): void {
+      LabeledStatement (path: NodePath, {opts}): void {
         const label: NodePath = path.get('label');
 
         if (label.node.name === ASSERT_NAME) {
-          assembleAssertion(path);
+          if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
+            path.remove();
+          }
+          else {
+            assembleAssertion(path);
+          }
           return;
         }
       }

@@ -102,7 +102,7 @@ function loadInternal (basename) {
       "stage-0",
     ],
     plugins: [
-      [contracts, {strip: true}],
+      [contracts],
       'transform-flow-strip-types',
       'syntax-class-properties'
     ]
