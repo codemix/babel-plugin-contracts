@@ -22,7 +22,7 @@ Postconditions are used to validate the result or side effects of the function.
 
 Invariants are used to ensure that an assumption holds true for the duration of the function.
 
-Although not strictly a contract, **[assertions]**(https://en.wikipedia.org/wiki/Assertion_\(software_development\)) are also supported.
+Although not strictly a contract, **[assertions](https://en.wikipedia.org/wiki/Assertion_\(software_development\))** are also supported.
 
 Neither invariants, assertions, preconditions or postconditions themselves may have side-effects, e.g. it is not possible to assign a new value to a variable from within a contract.
 
