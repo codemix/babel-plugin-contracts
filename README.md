@@ -6,7 +6,7 @@ This is a [Babel](https://babeljs.io/) plugin for design by contract for JavaScr
 
 # What?
 
-Design by contract is a very powerful technique for writing robust software, it can be thought of as a formal but convenient method for specifying assertions. Instead of the developer documenting their assumptions in comments, or worse, not documenting them at all, Design by Contract gives them a way to express their assumptions in a convenient syntax, and have those assumptions validated at runtime.
+[Design by contract](https://en.wikipedia.org/wiki/Design_by_contract) is a very powerful technique for writing robust software, it can be thought of as a formal but convenient method for specifying assertions. Instead of the developer documenting their assumptions in comments, or worse, not documenting them at all, Design by Contract gives them a way to express their assumptions in a convenient syntax, and have those assumptions validated at runtime.
 
 Contracts come in three flavours:
 
@@ -22,11 +22,13 @@ Postconditions are used to validate the result or side effects of the function.
 
 Invariants are used to ensure that an assumption holds true for the duration of the function.
 
-Neither invariants, preconditions or postconditions themselves may have side-effects, e.g. it is not possible to assign a new value to a variable from within a contract.
+Although not strictly a contract, **[assertions]**(https://en.wikipedia.org/wiki/Assertion_\(software_development\)) are also supported.
+
+Neither invariants, assertions, preconditions or postconditions themselves may have side-effects, e.g. it is not possible to assign a new value to a variable from within a contract.
 
 > Purity within contracts is enforced as much as possible by the plugin, but it is still possible for a programmer to circumvent, by calling an impure function from within the precondition or postcondition. **This is strongly discouraged.**
 
-This plugin implements Design by Contract by abusing JavaScript labels. Labels are a very rarely used feature of JavaScript, and a nice thing about them is that if a label is specified but not used, it is simply ignored by the JavaScript engine.
+This plugin implements Design by Contract by ~~abusing~~ repurposing JavaScript labels. Labels are a very rarely used feature of JavaScript, and a nice thing about them is that if a label is specified but not used, it is simply ignored by the JavaScript engine.
 This allows us to break up our function body into labeled sections, without affecting the result or behavior of the function. The plugin then retrieves these special labeled sections and transpiles them into contracts.
 
 # Installation
