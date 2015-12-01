@@ -12,6 +12,11 @@ else {
 }
 
 describe('Typecheck', function () {
+  ok('old-value', 5, 5);
+  failWith(`Function "add5" postcondition failed: input === old(input) + 5`, 'old-value', 5, 10);
+  ok('old-value-object', {price: 5}, 5);
+  failWith(`Function "add5" postcondition failed: input.price === old(input.price) + 5`, 'old-value-object', {price: 5}, 10);
+  ok('old-value-old-in-scope', 5, 5);
   ok('assert', 'hello');
   failWith(`Function "demo" assertion failed: input.length > 0`, 'assert', '');
   ok('assert-block', 'hello');

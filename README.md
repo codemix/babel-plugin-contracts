@@ -6,7 +6,7 @@ This is a [Babel](https://babeljs.io/) plugin for design by contract for JavaScr
 
 # What?
 
-Design by contract is a very powerful technique for writing robust software, it can be thought of as a formal but convenient method for specifying assertions. Instead of the developer documenting their assumptions in comments, or worse, not documenting them at all, Design by Contract gives them a way to express their assumptions in a convenient syntax, and have those assumptions validated at runtime.
+[Design by contract](https://en.wikipedia.org/wiki/Design_by_contract) is a very powerful technique for writing robust software, it can be thought of as a formal but convenient method for specifying assertions. Instead of the developer documenting their assumptions in comments, or worse, not documenting them at all, Design by Contract gives them a way to express their assumptions in a convenient syntax, and have those assumptions validated at runtime.
 
 Contracts come in three flavours:
 
@@ -22,11 +22,13 @@ Postconditions are used to validate the result or side effects of the function.
 
 Invariants are used to ensure that an assumption holds true for the duration of the function.
 
-Neither invariants, preconditions or postconditions themselves may have side-effects, e.g. it is not possible to assign a new value to a variable from within a contract.
+Although not strictly a contract, **[assertions]**(https://en.wikipedia.org/wiki/Assertion_\(software_development\)) are also supported.
+
+Neither invariants, assertions, preconditions or postconditions themselves may have side-effects, e.g. it is not possible to assign a new value to a variable from within a contract.
 
 > Purity within contracts is enforced as much as possible by the plugin, but it is still possible for a programmer to circumvent, by calling an impure function from within the precondition or postcondition. **This is strongly discouraged.**
 
-This plugin implements Design by Contract by abusing JavaScript labels. Labels are a very rarely used feature of JavaScript, and a nice thing about them is that if a label is specified but not used, it is simply ignored by the JavaScript engine.
+This plugin implements Design by Contract by ~~abusing~~ repurposing JavaScript labels. Labels are a very rarely used feature of JavaScript, and a nice thing about them is that if a label is specified but not used, it is simply ignored by the JavaScript engine.
 This allows us to break up our function body into labeled sections, without affecting the result or behavior of the function. The plugin then retrieves these special labeled sections and transpiles them into contracts.
 
 # Installation
@@ -88,8 +90,27 @@ The above example configuration will remove all contracts when `NODE_ENV=product
     }
   }
   ```
+    If we call this function without arguments, the post-condition will fail and an error will be thrown.
 
-  If we call this function without arguments, the post-condition will fail and an error will be thrown.
+  > Note: preconditions and postconditions can appear in any order directly within the function body.
+
+  Postconditions can also refer to the state of the world at the entry point of the function, which is extremely useful when verifying the results of functions with side effects. For this, we use a pseudo-function called `old()` which takes a single argument - the reference we want to capture, for example:
+
+  ```js
+  function applyDiscount (cart, amount) {
+    pre: {
+      !cart.hasDiscount, "Discounts can only be applied once";
+      cart.total >= amount, "Cannot discount to less than zero.";
+    }
+    post: {
+      cart.total === old(cart.total) - amount;
+    }
+    cart.total -= amount;
+    cart.hasDiscount = true;
+    // some more complicated stuff goes here...
+    return cart;
+  }
+  ```
 
 
 3. **Preconditions and Postconditions.**
@@ -143,12 +164,17 @@ The above example configuration will remove all contracts when `NODE_ENV=product
   or, with multiple:
 
   ```js
-  function add (a, b) {
+  function addAndSquare (a, b) {
     const result = a + b;
     assert: {
       typeof result === 'number';
       !isNaN(result);
     }
+
+    result *= result;
+
+    assert: result < Math.pow(2, 32), "Must be within an acceptable range";
+
     return result;
   }
   ```

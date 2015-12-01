@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-contracts",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Design by Contract for JavaScript via a Babel plugin.",
   "main": "lib/index.js",
   "scripts": {
