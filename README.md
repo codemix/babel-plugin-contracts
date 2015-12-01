@@ -88,8 +88,27 @@ The above example configuration will remove all contracts when `NODE_ENV=product
     }
   }
   ```
+    If we call this function without arguments, the post-condition will fail and an error will be thrown.
 
-  If we call this function without arguments, the post-condition will fail and an error will be thrown.
+  > Note: preconditions and postconditions can appear in any order directly within the function body.
+
+  Postconditions can also refer to the state of the world at the entry point of the function, which is extremely useful when verifying the results of functions with side effects. For this, we use a pseudo-function called `old()` which takes a single argument - the reference we want to capture, for example:
+
+  ```js
+  function applyDiscount (cart, amount) {
+    pre: {
+      !cart.hasDiscount, "Discounts can only be applied once";
+      cart.total >= amount, "Cannot discount to less than zero.";
+    }
+    post: {
+      cart.total === old(cart.total) - amount;
+    }
+    cart.total -= amount;
+    cart.hasDiscount = true;
+    // some more complicated stuff goes here...
+    return cart;
+  }
+  ```
 
 
 3. **Preconditions and Postconditions.**
@@ -143,12 +162,17 @@ The above example configuration will remove all contracts when `NODE_ENV=product
   or, with multiple:
 
   ```js
-  function add (a, b) {
+  function addAndSquare (a, b) {
     const result = a + b;
     assert: {
       typeof result === 'number';
       !isNaN(result);
     }
+
+    result *= result;
+
+    assert: result < Math.pow(2, 32), "Must be within an acceptable range";
+
     return result;
   }
   ```

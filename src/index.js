@@ -48,6 +48,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
   const INVARIANT_NAME = 'invariant';
   const ASSERT_NAME = 'assert';
   const RETURN_NAME = 'it';
+  const OLD_VALUE_NAME = 'old';
   const returnId: Identifier = t.identifier(RETURN_NAME);
 
   const guard: (ids: {[key: string]: Node}) => Node = template(`
@@ -120,6 +121,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
     const fn: NodePath = path.getFunctionParent();
     const name: string = fn.node.id ? `"${fn.node.id.name}" `: ' ';
     const conditions: Node[] = [];
+    const captures: Node[] = [];
 
     if (body.isExpressionStatement()) {
       let condition: NodePath = body.get('expression');
@@ -141,6 +143,17 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
       body.traverse({
         "VariableDeclaration|Function|AssignmentExpression|UpdateExpression|YieldExpression|ReturnStatement" (item: NodePath): void {
           throw path.buildCodeFrameError(`Postconditions cannot have side effects.`);
+        },
+        CallExpression (call: NodePath): void {
+          const callee: NodePath = call.get('callee');
+          const args: NodePath[] = call.get('arguments');
+          if (!callee.isIdentifier() || callee.node.name !== OLD_VALUE_NAME || call.scope.hasBinding(OLD_VALUE_NAME) || args.length === 0) {
+            return;
+          }
+          const argument: NodePath = args[0];
+          const id = call.scope.generateUidIdentifierBasedOnNode(argument.node);
+          fn.scope.push({id, init: argument.node, kind: 'const'});
+          call.replaceWith(id);
         },
         ExpressionStatement (statement: NodePath): void {
           let condition: NodePath = statement.get('expression');
