@@ -80,7 +80,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
         message = t.stringLiteral(`Function ${name}precondition failed: ${generate(condition.node).code}`);
       }
       path.replaceWith(guard({
-        condition,
+        condition: staticCheck(condition),
         message
       }));
       return;
@@ -102,7 +102,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
           message = t.stringLiteral(`Function ${name}precondition failed: ${generate(condition.node).code}`);
         }
         statement.replaceWith(guard({
-          condition,
+          condition: staticCheck(condition),
           message
         }));
       }
@@ -135,7 +135,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
         message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
       }
       conditions.push(guard({
-        condition,
+        condition: staticCheck(condition),
         message
       }));
     }
@@ -167,7 +167,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
             message = t.stringLiteral(`Function ${name}postcondition failed: ${generate(condition.node).code}`);
           }
           statement.replaceWith(guard({
-            condition,
+            condition: staticCheck(condition),
             message
           }));
         }
@@ -206,7 +206,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
         message = t.stringLiteral(`Assertion failed: ${generate(condition.node).code}`);
       }
       path.replaceWith(guard({
-        condition,
+        condition: staticCheck(condition),
         message
       }));
       return;
@@ -231,7 +231,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
           message = t.stringLiteral(`Assertion failed: ${generate(condition.node).code}`);
         }
         statement.replaceWith(guard({
-          condition,
+          condition: staticCheck(condition),
           message
         }));
       }
@@ -263,7 +263,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
         message = t.stringLiteral(`Function ${name}invariant failed: ${generate(condition.node).code}`);
       }
       conditions.push(guard({
-        condition,
+        condition: staticCheck(condition),
         message
       }));
     }
@@ -284,7 +284,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
             message = t.stringLiteral(`Function ${name}invariant failed: ${generate(condition.node).code}`);
           }
           statement.replaceWith(guard({
-            condition,
+            condition: staticCheck(condition),
             message
           }));
         }
@@ -309,6 +309,15 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
       const node: Node = fn(...args);
       return getExpression(node);
     };
+  }
+
+  function staticCheck (expression: NodePath): NodePath {
+    const {confident, value} = expression.evaluate();
+    if (confident && !value) {
+      throw expression.buildCodeFrameError(`Contract always fails.`);
+    }
+
+    return expression;
   }
 
   return {

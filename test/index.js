@@ -12,6 +12,7 @@ else {
 }
 
 describe('Typecheck', function () {
+  failStatic('bad-precondition-always-false', 'foobar');
   ok('class', 'first', 'second');
   ok('old-value', 5, 5);
   failWith(`Function "add5" postcondition failed: input === old(input) + 5`, 'old-value', 5, 10);
@@ -33,7 +34,7 @@ describe('Typecheck', function () {
   ok('assert-with-message', 'hello');
   failWith(`input cannot be empty`, 'assert-with-message', '');
   ok('assert-no-function', 'hello');
-  failWith(`Assertion failed: false`, 'bad-assert-no-function', 'hello');
+  failWith(`Assertion failed: fail()`, 'bad-assert-no-function', 'hello');
   ok('example-2', 1, 2);
   ok('example-2', 1);
   ok('example-2', 0, 2);
