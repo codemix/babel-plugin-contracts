@@ -58,7 +58,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
   `);
 
   const guardFn: (ids: {[key: string]: Node}) => Node = template(`
-    function id (it) {
+    const id = (it) => {
       conditions;
       return it;
     }
@@ -177,12 +177,13 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
 
     const id = path.scope.generateUidIdentifier(`${fn.node.id ? fn.node.id.name : 'check'}Postcondition`);
 
-    path.replaceWith(guardFn({
+    fn.get('body').get('body')[0].insertBefore(guardFn({
       id,
       conditions,
       it: returnId
     }));
 
+    path.remove();
     return id;
   }
 
@@ -292,13 +293,12 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
     }
 
     const id = path.scope.generateUidIdentifier(`${fn.node.id ? fn.node.id.name : 'check'}Invariant`);
-
-    path.replaceWith(guardFn({
+    path.parentPath.get('body')[0].insertBefore(guardFn({
       id,
       conditions,
       it: returnId
     }));
-
+    path.remove();
     return id;
   }
 
@@ -354,7 +354,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
               parent = path.findParent(t.isBlockStatement);
               children = parent.get('body');
               const first: NodePath = children[0];
-              first.insertBefore(t.expressionStatement(t.callExpression(id, [])))
+              first.insertAfter(t.expressionStatement(t.callExpression(id, [])))
             }
             parent.traverse({
               Function (path: NodePath): void {

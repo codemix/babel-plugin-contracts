@@ -12,6 +12,7 @@ else {
 }
 
 describe('Typecheck', function () {
+  ok('class', 'first', 'second');
   ok('old-value', 5, 5);
   failWith(`Function "add5" postcondition failed: input === old(input) + 5`, 'old-value', 5, 10);
   ok('old-value-object', {price: 5}, 5);
