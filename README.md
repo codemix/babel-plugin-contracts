@@ -165,7 +165,7 @@ The above example configuration will remove all contracts when `NODE_ENV=product
 
   ```js
   function addAndSquare (a, b) {
-    const result = a + b;
+    let result = a + b;
     assert: {
       typeof result === 'number';
       !isNaN(result);
