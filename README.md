@@ -200,6 +200,15 @@ The above example configuration will remove all contracts when `NODE_ENV=product
 
   Now if a contract fails, the error object will have a descriptive message.
 
+# Migrating from Contractual.
+This plugin uses a very similar syntax to our earlier Design by Contract library, [contractual](https://github.com/codemix/contractual). 
+If you're migrating your project there are some differences to be aware of:
+
+1. There is no longer a `main:` section. Anything outside of a contract is considered to be part of the normal program code.
+2. `__result` is now called `it` in postconditions.
+3. Invariants can be specified at the block / scope level, not just at function entry points.
+4. No longer creates custom error types.
+
 # License
 
 Published by [codemix](http://codemix.com/) under a permissive MIT License, see [LICENSE.md](./LICENSE.md).
