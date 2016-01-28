@@ -40,13 +40,15 @@ npm install --save-dev babel-plugin-contracts
 Then, in your babel configuration (usually in your `.babelrc` file), add `"contracts"` to your list of plugins:
 ```json
 {
-  "plugins": ["contracts", {
-    "env": {
-      "production": {
-        "strip": true
+  "plugins": [
+    ["contracts", {
+      "env": {
+        "production": {
+          "strip": true
+        }
       }
-    }
-  }]
+    }]
+  ]
 }
 ```
 
