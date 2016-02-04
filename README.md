@@ -40,13 +40,15 @@ npm install --save-dev babel-plugin-contracts
 Then, in your babel configuration (usually in your `.babelrc` file), add `"contracts"` to your list of plugins:
 ```json
 {
-  "plugins": ["contracts", {
-    "env": {
-      "production": {
-        "strip": true
+  "plugins": [
+    ["contracts", {
+      "env": {
+        "production": {
+          "strip": true
+        }
       }
-    }
-  }]
+    }]
+  ]
 }
 ```
 
@@ -165,7 +167,7 @@ The above example configuration will remove all contracts when `NODE_ENV=product
 
   ```js
   function addAndSquare (a, b) {
-    const result = a + b;
+    let result = a + b;
     assert: {
       typeof result === 'number';
       !isNaN(result);
@@ -199,6 +201,17 @@ The above example configuration will remove all contracts when `NODE_ENV=product
   ```
 
   Now if a contract fails, the error object will have a descriptive message.
+
+# Migrating from Contractual.
+This plugin uses a very similar syntax to our earlier Design by Contract library, [contractual](https://github.com/codemix/contractual). 
+If you're migrating your project there are some differences to be aware of:
+
+1. There is no longer a `main:` section. Anything outside of a contract is considered to be part of the normal program code.
+2. Contracts containing more than one assertion **must** be fully wrapped in a block statement (`{` and `}`), labels no longer act as delimiters.
+3. `__result` is now called `it` in postconditions.
+4. Invariants can be specified at the block / scope level, not just at function entry points.
+5. No longer creates custom error types.
+
 
 # License
 
