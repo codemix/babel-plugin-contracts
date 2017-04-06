@@ -43,13 +43,16 @@ type NodePath = {
  */
 export default function ({types: t, template, options}: PluginParams): Plugin {
 
-  const PRECONDITION_NAME = 'pre';
-  const POSTCONDITION_NAME = 'post';
-  const INVARIANT_NAME = 'invariant';
-  const ASSERT_NAME = 'assert';
-  const RETURN_NAME = 'it';
-  const OLD_VALUE_NAME = 'old';
-  const returnId: Identifier = t.identifier(RETURN_NAME);
+  const defaultNames = {
+    assert: 'assert',
+    precondition: 'pre',
+    postcondition: 'post',
+    invariant: 'invariant',
+    return: 'it',
+    old: 'old'
+  };
+
+  let NAMES = Object.assign({}, defaultNames);
 
   const guard: (ids: {[key: string]: Node}) => Node = template(`
     if (!condition) {
@@ -147,7 +150,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
         CallExpression (call: NodePath): void {
           const callee: NodePath = call.get('callee');
           const args: NodePath[] = call.get('arguments');
-          if (!callee.isIdentifier() || callee.node.name !== OLD_VALUE_NAME || call.scope.hasBinding(OLD_VALUE_NAME) || args.length === 0) {
+          if (!callee.isIdentifier() || callee.node.name !== NAMES.old || call.scope.hasBinding(NAMES.old) || args.length === 0) {
             return;
           }
           const argument: NodePath = args[0];
@@ -180,7 +183,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
     fn.get('body').get('body')[0].insertBefore(guardFn({
       id,
       conditions,
-      it: returnId
+      it: t.identifier(NAMES.return)
     }));
 
     path.remove();
@@ -296,7 +299,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
     path.parentPath.get('body')[0].insertBefore(guardFn({
       id,
       conditions,
-      it: returnId
+      it: t.identifier(NAMES.return)
     }));
     path.remove();
     return id;
@@ -322,79 +325,86 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
 
   return {
     visitor: {
-      Function (fn: NodePath, {opts}): void {
-        if (fn.isArrowFunctionExpression() && !fn.get('body').isBlockStatement()) {
-          // Naked arrow functions cannot contain contracts.
-          return;
+      Program (path: NodePath, {opts}: any) {
+        if (opts != null && opts.names !== undefined) {
+          NAMES = Object.assign({}, defaultNames, opts.names);
         }
-        fn.traverse({
-          Function (path: NodePath): void {
-            // This will be handled by the outer visitor, so skip it.
-            path.skip();
-          },
-
-          LabeledStatement (path: NodePath): void {
-            const label: NodePath = path.get('label');
-            if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
-              if (label.node.name === PRECONDITION_NAME || label.node.name === POSTCONDITION_NAME || label.node.name === INVARIANT_NAME || label.node.name === ASSERT_NAME) {
-                path.remove();
-              }
+        return path.traverse({
+          Function (fn: NodePath): void {
+            if (fn.isArrowFunctionExpression() && !fn.get('body').isBlockStatement()) {
+              // Naked arrow functions cannot contain contracts.
               return;
             }
-
-
-            let id: ?Identifier;
-            let children: ?NodePath[];
-            let parent: NodePath = fn;
-            if (label.node.name === PRECONDITION_NAME) {
-              assemblePrecondition(path);
-              return;
-            }
-            else if (label.node.name === POSTCONDITION_NAME) {
-              id = assemblePostcondition(path);
-              children = fn.get('body').get('body');
-            }
-            else if (label.node.name === ASSERT_NAME) {
-              assembleAssertion(path);
-              return;
-            }
-            else if (label.node.name === INVARIANT_NAME) {
-              id = assembleInvariant(path);
-              parent = path.findParent(t.isBlockStatement);
-              children = parent.get('body');
-              const first: NodePath = children[0];
-              first.insertAfter(t.expressionStatement(t.callExpression(id, [])))
-            }
-            parent.traverse({
+            fn.traverse({
               Function (path: NodePath): void {
                 // This will be handled by the outer visitor, so skip it.
                 path.skip();
               },
-              ReturnStatement (statement: NodePath): void {
-                statement.get('argument').replaceWith(t.callExpression(id, [statement.node.argument]));
+
+              LabeledStatement (path: NodePath): void {
+                const label: NodePath = path.get('label');
+                if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
+                  if (label.node.name === NAMES.precondition || label.node.name === NAMES.postcondition || label.node.name === NAMES.invariant || label.node.name === NAMES.assert) {
+                    path.remove();
+                  }
+                  return;
+                }
+
+
+                let id: ?Identifier;
+                let children: ?NodePath[];
+                let parent: NodePath = fn;
+                if (label.node.name === NAMES.precondition) {
+                  assemblePrecondition(path);
+                  return;
+                }
+                else if (label.node.name === NAMES.postcondition) {
+                  id = assemblePostcondition(path);
+                  children = fn.get('body').get('body');
+                }
+                else if (label.node.name === NAMES.assert) {
+                  assembleAssertion(path);
+                  return;
+                }
+                else if (label.node.name === NAMES.invariant) {
+                  id = assembleInvariant(path);
+                  parent = path.findParent(t.isBlockStatement);
+                  children = parent.get('body');
+                  const first: NodePath = children[0];
+                  first.insertAfter(t.expressionStatement(t.callExpression(id, [])))
+                }
+                parent.traverse({
+                  Function (path: NodePath): void {
+                    // This will be handled by the outer visitor, so skip it.
+                    path.skip();
+                  },
+                  ReturnStatement (statement: NodePath): void {
+                    statement.get('argument').replaceWith(t.callExpression(id, [statement.node.argument]));
+                  }
+                });
+                const last: NodePath = children[children.length - 1];
+                if (!last.isReturnStatement()) {
+                  last.insertAfter(t.expressionStatement(t.callExpression(id, [])));
+                }
               }
             });
-            const last: NodePath = children[children.length - 1];
-            if (!last.isReturnStatement()) {
-              last.insertAfter(t.expressionStatement(t.callExpression(id, [])));
+          },
+
+          LabeledStatement (path: NodePath): void {
+            const label: NodePath = path.get('label');
+
+            if (label.node.name === NAMES.assert) {
+              if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
+                path.remove();
+              }
+              else {
+                assembleAssertion(path);
+              }
+              return;
             }
           }
         });
-      },
-
-      LabeledStatement (path: NodePath, {opts}): void {
-        const label: NodePath = path.get('label');
-
-        if (label.node.name === ASSERT_NAME) {
-          if (opts.strip || (opts.env && opts.env[process.env.NODE_ENV] && opts.env[process.env.NODE_ENV].strip)) {
-            path.remove();
-          }
-          else {
-            assembleAssertion(path);
-          }
-          return;
-        }
       }
     }
-  };
+  }
 }

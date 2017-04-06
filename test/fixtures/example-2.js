@@ -9,7 +9,7 @@ export default function items (a, b) {
   return c;
 
   post: {
-    Array.isArray(it);
-    it.length > 0;
+    Array.isArray(retVal);
+    retVal.length > 0;
   }
 }

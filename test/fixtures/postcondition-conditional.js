@@ -1,6 +1,6 @@
 export default function demo (input) {
   post: {
-    it === true;
+    retVal === true;
   }
   return input ? true : false;
 }

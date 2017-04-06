@@ -38,7 +38,7 @@ describe('Typecheck', function () {
   ok('example-2', 1, 2);
   ok('example-2', 1);
   ok('example-2', 0, 2);
-  failWith(`Function "items" postcondition failed: it.length > 0`, 'example-2');
+  failWith(`Function "items" postcondition failed: retVal.length > 0`, 'example-2');
   ok('example-3', {balance: 100, overdraftLimit: 100}, 10);
   failWith(`Function "withdraw" precondition failed: fromAccount.balance - amount > -fromAccount.overdraftLimit`, 'example-3', {balance: 100, overdraftLimit: 100}, 1000);
   ok('example-4', {balance: 100, overdraftLimit: 100}, 10);
@@ -62,29 +62,29 @@ describe('Typecheck', function () {
   failWith(`Expected string`, 'precondition-no-block-with-message', false);
 
   ok('postcondition', 'foo');
-  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition', false);
+  failWith(`Function "demo" postcondition failed: typeof retVal === 'string'`, 'postcondition', false);
   ok('postcondition-with-if', 'foo');
-  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition-with-if', false);
+  failWith(`Function "demo" postcondition failed: typeof retVal === 'string'`, 'postcondition-with-if', false);
   ok('postcondition-with-if-inside', 'foo');
-  failWith(`Function "demo" postcondition failed: it.length > 2`, 'postcondition-with-if-inside', 'no');
+  failWith(`Function "demo" postcondition failed: retVal.length > 2`, 'postcondition-with-if-inside', 'no');
   ok('postcondition-no-return', 'foo');
   failWith(`Function "demo" postcondition failed: typeof input === 'string'`, 'postcondition-no-return', false);
   ok('postcondition-conditional', true);
-  failWith(`Function "demo" postcondition failed: it === true`, 'postcondition-conditional', false);
+  failWith(`Function "demo" postcondition failed: retVal === true`, 'postcondition-conditional', false);
 
   ok('postcondition-no-block', 'foo');
-  failWith(`Function "demo" postcondition failed: typeof it === 'string'`, 'postcondition-no-block', false);
+  failWith(`Function "demo" postcondition failed: typeof retVal === 'string'`, 'postcondition-no-block', false);
 
   ok('postcondition-no-block-with-message', 'foo');
   failWith(`Expected string`, 'postcondition-no-block-with-message', false);
 
   ok('precondition-and-postcondition', 'foo');
   failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition', true);
-  failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition', 'no');
+  failWith(`Function "demo" postcondition failed: retVal > 2`, 'precondition-and-postcondition', 'no');
 
   ok('precondition-and-postcondition-no-block', 'foo');
   failWith(`Function "demo" precondition failed: typeof input === 'string'`, 'precondition-and-postcondition-no-block', true);
-  failWith(`Function "demo" postcondition failed: it > 2`, 'precondition-and-postcondition-no-block', 'no');
+  failWith(`Function "demo" postcondition failed: retVal > 2`, 'precondition-and-postcondition-no-block', 'no');
 
   ok('invariant', 'hello world');
   ok('loop-invariant', 'hello world');
@@ -109,7 +109,11 @@ function loadInternal (basename) {
       "stage-0",
     ],
     plugins: [
-      [contracts],
+      [contracts, {
+        names: {
+          return: 'retVal',
+        }
+      }],
       'transform-flow-strip-types',
       'syntax-class-properties'
     ]
