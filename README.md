@@ -53,6 +53,24 @@ Then, in your babel configuration (usually in your `.babelrc` file), add `"contr
 ```
 
 The above example configuration will remove all contracts when `NODE_ENV=production`, which is often preferable for performance reasons.
+You can customize the names of the labels and identifiers by specifying a `names` option, e.g.
+
+```json
+{
+  "plugins": [
+    ["contracts", {
+      "names": {
+        "assert": "assert",
+        "precondition": "pre",
+        "postcondition": "post",
+        "invariant": "invariant",
+        "return": "it",
+        "old": "old"
+      }
+    }]
+  ]
+}
+```
 
 ## Examples
 
@@ -203,7 +221,7 @@ The above example configuration will remove all contracts when `NODE_ENV=product
   Now if a contract fails, the error object will have a descriptive message.
 
 # Migrating from Contractual.
-This plugin uses a very similar syntax to our earlier Design by Contract library, [contractual](https://github.com/codemix/contractual). 
+This plugin uses a very similar syntax to our earlier Design by Contract library, [contractual](https://github.com/codemix/contractual).
 If you're migrating your project there are some differences to be aware of:
 
 1. There is no longer a `main:` section. Anything outside of a contract is considered to be part of the normal program code.

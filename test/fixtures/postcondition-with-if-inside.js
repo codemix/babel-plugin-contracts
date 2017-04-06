@@ -1,7 +1,7 @@
 export default function demo (input) {
   post: {
-    if (typeof it === 'string') {
-      it.length > 2;
+    if (typeof retVal === 'string') {
+      retVal.length > 2;
     }
   }
   if (true) {

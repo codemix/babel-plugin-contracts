@@ -1,6 +1,6 @@
 export default function demo (input) {
   post: {
-    typeof it === 'string';
+    typeof retVal === 'string';
   }
   return input;
 }

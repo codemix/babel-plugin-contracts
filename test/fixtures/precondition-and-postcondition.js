@@ -3,8 +3,8 @@ export default function demo (input) {
     typeof input === 'string';
   }
   post: {
-    typeof it === 'number';
-    it > 2;
+    typeof retVal === 'number';
+    retVal > 2;
   }
   return input.length;
 }
