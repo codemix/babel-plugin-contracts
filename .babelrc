@@ -1,9 +1,8 @@
 {
   "presets": [
-    "stage-0",
-    "es2015"
+    "@babel/preset-env"
   ],
   "plugins": [
-    "typecheck"
+    "@babel/plugin-proposal-class-properties"
   ]
 }
