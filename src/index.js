@@ -1,4 +1,4 @@
-import generate from "babel-generator";
+import generate from "@babel/generator";
 
 type Plugin = {
   visitor: Visitors
@@ -55,15 +55,15 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
   let NAMES = Object.assign({}, defaultNames);
 
   const guard: (ids: {[key: string]: Node}) => Node = template(`
-    if (!condition) {
-      throw new Error(message);
+    if (!%%condition%%) {
+      throw new Error(%%message%%);
     }
   `);
 
   const guardFn: (ids: {[key: string]: Node}) => Node = template(`
-    const id = (it) => {
-      conditions;
-      return it;
+    const %%id%% = (%%it%%) => {
+      %%conditions%%;
+      return %%it%%;
     }
   `);
 
@@ -320,7 +320,7 @@ export default function ({types: t, template, options}: PluginParams): Plugin {
       throw expression.buildCodeFrameError(`Contract always fails.`);
     }
 
-    return expression;
+    return expression.node;
   }
 
   return {

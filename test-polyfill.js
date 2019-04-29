@@ -1,7 +1,8 @@
-require("babel-core/register")({
-  "presets": ["stage-1", "es2015"],
+require("@babel/register")({
+  "presets": ["@babel/preset-env"],
   "plugins": [
-    //"syntax-flow",
-    "transform-flow-strip-types"
+    //"@babel/plugin-syntax-flow",
+    "@babel/plugin-transform-flow-strip-types",
+    "@babel/plugin-proposal-class-properties"
   ]
 });

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import {parse, transform, traverse} from 'babel-core';
+import {transform} from '@babel/core';
 
 if (process.env.NODE_WATCH) {
   var contracts = require('../src').default;
@@ -105,8 +105,7 @@ function loadInternal (basename) {
   const transformed = transform(source, {
     filename: filename,
     presets: [
-      "es2015",
-      "stage-0",
+      "@babel/preset-env"
     ],
     plugins: [
       [contracts, {
@@ -114,8 +113,8 @@ function loadInternal (basename) {
           return: 'retVal',
         }
       }],
-      'transform-flow-strip-types',
-      'syntax-class-properties'
+      "@babel/plugin-transform-flow-strip-types",
+      "@babel/plugin-proposal-class-properties"
     ]
   });
   const context = {
